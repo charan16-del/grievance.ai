@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .refresh {
+      background: #22c55e;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #1e293b;
+    }
+
+    th, td {
+      border: 1px solid #334155;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #334155;
+    }
+
+    .resolve {
+      background: #22c55e;
+      color: white;
+    }
+
+    .progress {
+      background: #f59e0b;
+      color: black;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📊 Admin Dashboard</h1>
+
+  <button class="refresh" onclick="loadData()">🔄 Refresh Data</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Complaint</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
+    <tbody id="table"></tbody>
+  </table>
+
+</div>
+
+<script>
+async function loadData() {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/complaints");
+    const data = await res.json();
+
+    const table = document.getElementById("table");
+    table.innerHTML = "";
+
+    data.forEach(item => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${item.id}</td>
+        <td>${item.text}</td>
+        <td>${item.category}</td>
+        <td>${item.priority}</td>
+        <td>${item.status}</td>
+        <td>
+          <button class="resolve" onclick="updateStatus(${item.id}, 'Resolved')">Resolve</button>
+          <button class="progress" onclick="updateStatus(${item.id}, 'In Progress')">Progress</button>
+        </td>
+      `;
+
+      table.appendChild(row);
+    });
+
+  } catch (error) {
+    console.log("ERROR:", error);
+  }
+}
+
+async function updateStatus(id, status) {
+  await fetch(`http://127.0.0.1:8000/complaint/${id}?status=${status}`, {
+    method: "PUT"
+  });
+
+  loadData();
+}
+
+window.onload = loadData;
+</script>
+
+</body>
+</html>

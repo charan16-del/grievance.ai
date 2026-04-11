@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Submit Complaint</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 10px;
+      width: 400px;
+      text-align: center;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      padding: 10px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #22c55e;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>📝 Submit Complaint</h2>
+
+  <textarea id="text" placeholder="Enter your complaint..."></textarea>
+
+  <button onclick="submitComplaint()">Submit</button>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+async function submitComplaint() {
+  const text = document.getElementById("text").value;
+
+  if (!text) {
+    alert("Please enter complaint");
+    return;
+  }
+
+  const res = await fetch("http://127.0.0.1:8000/complaint", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ text })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("msg").innerText =
+    "Complaint submitted! ID: " + data.id;
+
+  document.getElementById("text").value = "";
+}
+</script>
+
+</body>
+</html>
