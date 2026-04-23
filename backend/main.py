@@ -30,12 +30,19 @@ class ComplaintDB(Base):
     category = Column(String)
     priority = Column(String)
     status = Column(String)
+class UserDB(Base):
+    __tablename__ = "users"
 
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String)
 Base.metadata.create_all(bind=engine)
-users = {
-    "admin": "admin123",
-    "user": "user123"
-}
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String)
 @app.post("/login")
 def login(data: dict):
     username = data.get("username")
@@ -65,6 +72,37 @@ def analyze(text: str):
     else:
         return {"category": "General", "priority": "Low"}
 
+@app.post("/register")
+def register(data: dict):
+    db = SessionLocal()
+
+    user = db.query(UserDB).filter(UserDB.username == data["username"]).first()
+
+    if user:
+        return {"error": "User exists"}
+
+    new_user = UserDB(
+        username=data["username"],
+        password=data["password"]
+    )
+
+    db.add(new_user)
+    db.commit()
+
+    return {"message": "registered"}
+@app.post("/login")
+def login(data: dict):
+    db = SessionLocal()
+
+    user = db.query(UserDB).filter(UserDB.username == data["username"]).first()
+
+    if not user or user.password != data["password"]:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    return {
+        "message": "success",
+        "role": user.username
+    }
 # ---------------- POST COMPLAINT ----------------
 @app.post("/complaint")
 def create_complaint(data: Complaint):
