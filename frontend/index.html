@@ -1,81 +1,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Submit Complaint</title>
+  <title>Grievance System</title>
+  <link rel="stylesheet" href="style.css">
 
   <style>
     body {
       font-family: Arial;
       background: #0f172a;
       color: white;
+      margin: 0;
+    }
+
+    .container {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      gap: 10px;
+      padding: 20px;
+      height: 90vh;
     }
 
-    .box {
+    .panel {
+      flex: 1;
       background: #1e293b;
-      padding: 30px;
+      padding: 15px;
       border-radius: 10px;
-      width: 400px;
-      text-align: center;
+      overflow-y: auto;
     }
 
-    textarea {
-      width: 100%;
-      height: 100px;
-      margin-top: 10px;
+    input, button {
       padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
     }
 
     button {
-      margin-top: 15px;
-      padding: 10px 20px;
       background: #22c55e;
-      border: none;
       color: white;
       cursor: pointer;
-      border-radius: 5px;
     }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    #chat-box {
+      height: 300px;
+      overflow-y: auto;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .msg {
+      padding: 6px;
+      margin: 5px 0;
+      border-radius: 6px;
+    }
+
+    .user { background: #22c55e; text-align: right; }
+    .bot { background: #334155; }
   </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h2>📝 Submit Complaint</h2>
+<!-- 🔐 LOGIN SCREEN -->
+<div id="loginBox" style="text-align:center; margin-top:100px;">
+  <h2>Login</h2>
 
-  <textarea id="text" placeholder="Enter your complaint..."></textarea>
+  <input id="username" placeholder="Username">
+  <br><br>
 
-  <button onclick="submitComplaint()">Submit</button>
+  <input id="password" type="password" placeholder="Password">
+  <br><br>
 
-  <p id="msg"></p>
+  <button onclick="login()">Login</button>
+
+  <p id="loginMsg"></p>
 </div>
 
+<!-- 🔓 MAIN APP (HIDDEN FIRST) -->
+<div id="app" style="display:none;">
+
+  <div class="container">
+
+    <!-- CHAT -->
+    <div class="panel">
+      <h3>💬 Complaint Chat</h3>
+
+      <div id="chat-box"></div>
+
+      <input id="text" placeholder="Type complaint..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="panel">
+      <h3>📋 Dashboard</h3>
+
+      <button onclick="loadComplaints()">Refresh</button>
+
+      <div id="list"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- JS -->
+<script src="app.js"></script>
+
+<!-- 🔐 LOGIN FUNCTION (needed here OR in app.js) -->
 <script>
-async function submitComplaint() {
-  const text = document.getElementById("text").value;
+async function login() {
+  let username = document.getElementById("username").value;
+  let password = document.getElementById("password").value;
 
-  if (!text) {
-    alert("Please enter complaint");
-    return;
-  }
-
-  const res = await fetch("http://127.0.0.1:8000/complaint", {
+  let res = await fetch("https://faithful-kindness-production.up.railway.app/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ username, password })
   });
 
-  const data = await res.json();
-
-  document.getElementById("msg").innerText =
-    "Complaint submitted! ID: " + data.id;
-
-  document.getElementById("text").value = "";
+  if (res.ok) {
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  } else {
+    document.getElementById("loginMsg").innerText = "Invalid login";
+  }
 }
 </script>
 

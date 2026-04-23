@@ -1,10 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
 
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
-
 app = FastAPI()
 
 # ---------------- CORS ----------------
@@ -32,7 +32,22 @@ class ComplaintDB(Base):
     status = Column(String)
 
 Base.metadata.create_all(bind=engine)
+users = {
+    "admin": "admin123",
+    "user": "user123"
+}
+@app.post("/login")
+def login(data: dict):
+    username = data.get("username")
+    password = data.get("password")
 
+    if username in users and users[username] == password:
+        return {
+            "message": "success",
+            "role": username
+        }
+
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 # ---------------- REQUEST MODEL ----------------
 class Complaint(BaseModel):
     text: str
