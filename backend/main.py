@@ -1,10 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import BaseModel
 
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
+
 app = FastAPI()
 
 # ---------------- CORS ----------------
@@ -17,11 +17,14 @@ app.add_middleware(
 )
 
 # ---------------- DATABASE ----------------
-engine = create_engine("sqlite:///./grievance.db", connect_args={"check_same_thread": False})
+engine = create_engine(
+    "sqlite:///./grievance.db",
+    connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# ---------------- TABLE ----------------
+# ---------------- TABLES ----------------
 class ComplaintDB(Base):
     __tablename__ = "complaints"
 
@@ -30,34 +33,28 @@ class ComplaintDB(Base):
     category = Column(String)
     priority = Column(String)
     status = Column(String)
+
+
 class UserDB(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True)
     password = Column(String)
+
+
+# create tables
 Base.metadata.create_all(bind=engine)
-class UserDB(Base):
-    __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
-    password = Column(String)
-@app.post("/login")
-def login(data: dict):
-    username = data.get("username")
-    password = data.get("password")
-
-    if username in users and users[username] == password:
-        return {
-            "message": "success",
-            "role": username
-        }
-
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-# ---------------- REQUEST MODEL ----------------
+# ---------------- REQUEST MODELS ----------------
 class Complaint(BaseModel):
     text: str
+
+
+class LoginData(BaseModel):
+    username: str
+    password: str
+
 
 # ---------------- AI LOGIC ----------------
 def analyze(text: str):
@@ -72,37 +69,36 @@ def analyze(text: str):
     else:
         return {"category": "General", "priority": "Low"}
 
+
+# ---------------- REGISTER API ----------------
 @app.post("/register")
-def register(data: dict):
+def register(data: LoginData):
     db = SessionLocal()
 
-    user = db.query(UserDB).filter(UserDB.username == data["username"]).first()
+    existing = db.query(UserDB).filter(UserDB.username == data.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User already exists")
 
-    if user:
-        return {"error": "User exists"}
-
-    new_user = UserDB(
-        username=data["username"],
-        password=data["password"]
-    )
-
+    new_user = UserDB(username=data.username, password=data.password)
     db.add(new_user)
     db.commit()
 
-    return {"message": "registered"}
+    return {"message": "User registered successfully"}
+
+
+# ---------------- LOGIN API ----------------
 @app.post("/login")
-def login(data: dict):
+def login(data: LoginData):
     db = SessionLocal()
 
-    user = db.query(UserDB).filter(UserDB.username == data["username"]).first()
+    user = db.query(UserDB).filter(UserDB.username == data.username).first()
 
-    if not user or user.password != data["password"]:
+    if not user or user.password != data.password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    return {
-        "message": "success",
-        "role": user.username
-    }
+    return {"message": "Login successful"}
+
+
 # ---------------- POST COMPLAINT ----------------
 @app.post("/complaint")
 def create_complaint(data: Complaint):
@@ -129,7 +125,8 @@ def create_complaint(data: Complaint):
         "status": new_complaint.status
     }
 
-# ---------------- GET ALL COMPLAINTS ----------------
+
+# ---------------- GET COMPLAINTS ----------------
 @app.get("/complaints")
 def get_complaints():
     db = SessionLocal()
@@ -146,6 +143,7 @@ def get_complaints():
         for i in items
     ]
 
+
 # ---------------- UPDATE STATUS ----------------
 @app.put("/complaint/{complaint_id}")
 def update_status(complaint_id: int, status: str):
@@ -154,12 +152,9 @@ def update_status(complaint_id: int, status: str):
     complaint = db.query(ComplaintDB).filter(ComplaintDB.id == complaint_id).first()
 
     if not complaint:
-        return {"error": "Not found"}
+        raise HTTPException(status_code=404, detail="Not found")
 
     complaint.status = status
     db.commit()
 
-    return {
-        "message": "updated",
-        "status": status
-    }
+    return {"message": "updated", "status": status}
